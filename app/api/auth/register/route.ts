@@ -1,6 +1,7 @@
 import connectDB from "@/lib/db";
 import User from "@/lib/models/User";
 import { NextResponse } from "next/server";
+import bcrypt from "bcryptjs";
 
 type User = {
     name: string,
@@ -25,14 +26,41 @@ export async function POST(request: Request) {
             );
         }
 
+
+
         await connectDB();
+
+        const normalizedEmail = email.trim().toLowerCase();
+
+        const existingUser = await User.findOne({
+            email: normalizedEmail,
+        });
+
+
+        if (existingUser) {
+            return NextResponse.json(
+                { message: "Email is already registered" },
+                { status: 409 }
+            );
+        }
+        const hashedPassword = await bcrypt.hash(password, 12);
 
         const user = await User.create({
             name,
-            email, password
+            email, password: hashedPassword
         });
 
-        return NextResponse.json(user, { status: 201 });
+        return NextResponse.json(
+            {
+                message: "Registration successful",
+                user: {
+                    id: user._id.toString(),
+                    name: user.name,
+                    email: user.email,
+                },
+            },
+            { status: 201 }
+        );
     } catch (error) {
         console.error("Register failed:", error);
         return NextResponse.json(

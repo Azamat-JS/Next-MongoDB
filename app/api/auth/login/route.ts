@@ -1,12 +1,9 @@
+
 import connectDB from "@/lib/db";
 import User from "@/lib/models/User";
 import { NextResponse } from "next/server";
-
-type User = {
-    name: string,
-    email: string,
-    password: string
-}
+import bcrypt from "bcryptjs";
+import { generateToken } from "@/lib/auth";
 
 export async function POST(request: Request) {
     try {
@@ -14,33 +11,68 @@ export async function POST(request: Request) {
         const { email, password } = body;
 
         if (
-
-            typeof email !== "string" || typeof password !== "string"
-
+            typeof email !== "string" ||
+            !email.trim() ||
+            typeof password !== "string" ||
+            !password
         ) {
             return NextResponse.json(
-                { message: "Invalid user data" },
+                { message: "Email and password are required" },
                 { status: 400 }
             );
         }
 
         await connectDB();
+
         const foundUser = await User.findOne({
-            email
+            email: email.trim().toLowerCase(),
         });
 
-        if (foundUser.password !== password) {
+
+        if (!foundUser) {
             return NextResponse.json(
-                { message: "Invalid password" },
-                { status: 400 }
+                { message: "Invalid email or password" },
+                { status: 401 }
             );
         }
 
-        return NextResponse.json(foundUser, { status: 200 });
-    } catch (error) {
-        console.error("Register failed:", error);
+
+        const isPasswordCorrect = await bcrypt.compare(
+            password,
+            foundUser.password
+        );
+
+        if (!isPasswordCorrect) {
+            return NextResponse.json(
+                { message: "Invalid email or password" },
+                { status: 401 }
+            );
+        }
+
+
+        const token = generateToken({
+            id: foundUser._id,
+            email: foundUser.email,
+            role: foundUser.role
+        });
+
         return NextResponse.json(
-            { message: "Failed to create product" },
+            {
+                message: "Login successful",
+                token,
+                user: {
+                    id: foundUser._id.toString(),
+                    name: foundUser.name,
+                    email: foundUser.email,
+                },
+            },
+            { status: 200 }
+        );
+    } catch (error) {
+        console.error("Login failed:", error);
+
+        return NextResponse.json(
+            { message: "Login failed" },
             { status: 500 }
         );
     }
