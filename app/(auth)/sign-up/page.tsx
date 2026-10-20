@@ -14,42 +14,29 @@ import { Label } from "@/components/ui/label";
 import Link from "next/link";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { signUp } from "@/lib/auth-client";
+import { useAuthStore } from "@/lib/store/auth-store";
 
 export default function SignUp() {
-    const [name, setName] = useState("");
-    const [email, setEmail] = useState("");
-    const [password, setPassword] = useState("");
 
-    const [error, setError] = useState("");
-    const [loading, setLoading] = useState(false);
-
+    const register = useAuthStore((state) => state.register);
+    const isLoading = useAuthStore((state) => state.isLoading);
+    const error = useAuthStore((state) => state.error);
+    const clearError = useAuthStore((state) => state.clearError
+    );
     const router = useRouter();
 
-    async function handleSubmit(e: React.FormEvent) {
+    async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
         e.preventDefault();
+        const formData = new FormData(e.currentTarget);
 
-        setError("");
-        setLoading(true);
+        const success = await register(
+            String(formData.get('name') || ""),
+            String(formData.get('email') || ""),
+            String(formData.get('password') || ""),
+        );
 
-        try {
-            const result = await fetch("/api/auth/register", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    name, email, password
-                })
-            })
-
-            if (!result.ok) {
-                setError("Failed to sign up");
-            } else {
-                router.push("/");
-            }
-        } catch (err) {
-            setError("An unexpected error occurred");
-        } finally {
-            setLoading(false);
+        if (success) {
+            router.push("/");
         }
     }
 
@@ -78,9 +65,9 @@ export default function SignUp() {
                             <Input
                                 id="name"
                                 type="text"
+                                name="name"
                                 placeholder="John Doe"
-                                value={name}
-                                onChange={(e) => setName(e.target.value)}
+                                onChange={clearError}
                                 required
                                 className="border-gray-300 focus:border-primary focus:ring-primary"
                             />
@@ -92,9 +79,9 @@ export default function SignUp() {
                             <Input
                                 id="email"
                                 type="email"
+                                name="email"
                                 placeholder="you@example.com"
-                                value={email}
-                                onChange={(e) => setEmail(e.target.value)}
+                                onChange={clearError}
                                 required
                                 className="border-gray-300 focus:border-primary focus:ring-primary"
                             />
@@ -106,8 +93,8 @@ export default function SignUp() {
                             <Input
                                 id="password"
                                 type="password"
-                                value={password}
-                                onChange={(e) => setPassword(e.target.value)}
+                                name="password"
+                                onChange={clearError}
                                 required
                                 minLength={8}
                                 className="border-gray-300 focus:border-primary focus:ring-primary"
@@ -118,9 +105,9 @@ export default function SignUp() {
                         <Button
                             type="submit"
                             className="w-full bg-primary hover:bg-primary/90"
-                            disabled={loading}
+                            disabled={isLoading}
                         >
-                            {loading ? "Creating account..." : "Sign Up"}
+                            {isLoading ? "Creating account..." : "Sign Up"}
                         </Button>
                         <p className="text-center text-sm text-gray-600">
                             Already have an account?{" "}

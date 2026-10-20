@@ -39,9 +39,9 @@ export default function SignUp() {
                     email, password
                 })
             })
-
+            const data = await result.json()
             if (!result.ok) {
-                setError("Failed to sign up");
+                setError(data.message || 'Failed to sign in')
             } else {
                 router.push("/");
             }
