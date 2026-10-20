@@ -2,6 +2,7 @@ import connectDB from "@/lib/db";
 import User from "@/lib/models/User";
 import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
+import { generateToken } from "@/lib/auth";
 
 type User = {
     name: string,
@@ -50,9 +51,16 @@ export async function POST(request: Request) {
             email, password: hashedPassword
         });
 
+        const token = generateToken({
+            id: user._id,
+            email: user.email,
+            role: "user",
+        });
+
         return NextResponse.json(
             {
                 message: "Registration successful",
+                token,
                 user: {
                     id: user._id.toString(),
                     name: user.name,

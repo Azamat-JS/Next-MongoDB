@@ -47,8 +47,7 @@ export async function POST(request: Request) {
                 { message: "Invalid email or password" },
                 { status: 401 }
             );
-        }
-
+        };
 
         const token = generateToken({
             id: foundUser._id,
@@ -64,6 +63,7 @@ export async function POST(request: Request) {
                     id: foundUser._id.toString(),
                     name: foundUser.name,
                     email: foundUser.email,
+                    role: foundUser.role
                 },
             },
             { status: 200 }
